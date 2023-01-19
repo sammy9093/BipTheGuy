@@ -7,20 +7,24 @@
 
 import SwiftUI
 import AVFAudio
+import PhotosUI
 
 
 
 
 struct ContentView: View {
     @State private var audioPlayer: AVAudioPlayer!
+    @State private var selectedPhoto: PhotosPickerItem? //? = Could be nil
     //        This is the audioPlayer object. Implicitly Unwrapped Optional without additional handiling.
     //        @State private var scale = 1.0 // 100% scale, or original size
     @State private var animateImage = true
+    @State private var bipImage = Image("clown")
     
     var body: some View {
         VStack {
             Spacer()
-            Image("clown")
+            
+            bipImage
                 .resizable()
                 .scaledToFit()
             //                    .scaleEffect(scale)
@@ -39,12 +43,28 @@ struct ContentView: View {
             
             Spacer()
             
-            Button {
-                //TODO: Button action here
-            } label: {
+            PhotosPicker(selection: $selectedPhoto, matching: .images, preferredItemEncoding: .automatic) {
                 Label("Photo Library", systemImage: "photo.fill.on.rectangle.fill")
             }
-            .buttonStyle(.borderedProminent)
+            .onChange(of: selectedPhoto) { newValue in
+                    // We need to:
+                    // - get the data inside the PhotosPickerItem selectedPhoto
+                    // - use the data to create a UIImage
+                    // - use the UIImage to create an Image,
+                    // - and assign that image to bipImage
+                Task {
+                    do {
+                        if let data = try await newValue?.loadTransferable(type: Data.self) {
+                            if let uiImage = UIImage(data: data) {
+                                bipImage = Image(uiImage: uiImage)
+                            }
+                        }
+                    } catch {
+                        print("😡 ERRPR:loading failed \(error.localizedDescription)")
+                    }
+                }
+            }
+//            .buttonStyle(.borderedProminent)
             
         }
         .padding()
